@@ -1,8 +1,9 @@
 clc; clear; close all;
 % --- CONFIG ----
-model = 'PD_controller';  % <-- replace with your model name (the file that contains Figure 2)
+model_PD = 'PD_controller';  % <-- replace with your model name (the file that contains Figure 2)
+model_distrubance = 'PD_w_disturbance';
 baseDir = fileparts(mfilename('fullpath'));
-cases  = {'2-1a','2-1b'};     % will run both and make two figures
+cases  = {'2-1a','2-1b','2-1b'};     % will run all and make three figures
 % ----------------
 
 for k = 1:numel(cases)
@@ -24,9 +25,16 @@ for k = 1:numel(cases)
     assignin('base','xr_simin',xr_simin);  % the Inport block named xr_simin will read this
 
     % 3) Run Simulink for the same time span as the data
-    load_system(model);
     stopTime = num2str(Xr(end,1));
-    simOut   = sim(model, 'StopTime', stopTime, 'ReturnWorkspaceOutputs', 'on');
+    if k ~= 3
+        figure_title = ['MTE360 3.1a – ' caseName];
+        load_system(model_PD);
+        simOut   = sim(model_PD, 'StopTime', stopTime, 'ReturnWorkspaceOutputs', 'on');
+    else
+        figure_title = ['MTE360 3.1f – ' caseName];
+        load_system(model_distrubance);
+        simOut   = sim(model_distrubance, 'StopTime', stopTime, 'ReturnWorkspaceOutputs', 'on');
+    end
 
     % 4) Extract logged signals (N×2: [t  value])
     x_sim  = simOut.x_sim;
@@ -38,7 +46,7 @@ for k = 1:numel(cases)
     tL = X(:,1);       % lab time
     
     % 5) Dark figure and three stacked axes
-    f  = figure('Name',['MTE360 3.1a – ' caseName], 'Color','k', ...
+    f  = figure('Name',figure_title , 'Color','k', ...
                 'Position',[100 100 1100 800]);
     tl = tiledlayout(3,1,'TileSpacing','compact','Padding','compact');
     title(tl,'MTE360 – Section 3.1a Overlay','Color','w','FontWeight','normal');
@@ -51,7 +59,7 @@ for k = 1:numel(cases)
     plot(tS, xr_sim(:,2), '--', 'Color',[0 1 0], 'LineWidth',1.6);   % reference in green
     plot(tS, x_sim(:,2),  'Color',[0 1 1], 'LineWidth',1.8);         % sim x in cyan
     plot(tL, X(:,2),      'Color',[1 0 1], 'LineWidth',1.2);         % lab x in magenta
-    grid on; xlabel('t [s]'); ylabel('x'); title(['Position – ' caseName],'Color','w');
+    grid on; xlabel('t [s]'); ylabel('x [mm]'); title(['Position – ' caseName],'Color','w');
     legend({'x_r','x_{sim}','x_{lab}'},'Location','eastoutside','TextColor','w','Box','off');
     darken(ax1);
     
@@ -59,7 +67,7 @@ for k = 1:numel(cases)
     ax2 = nexttile; hold(ax2,'on');
     plot(tS, e_sim(:,2), 'Color',[0 1 1], 'LineWidth',1.8);           % sim e in cyan
     plot(tL, E_lab,      'Color',[1 0 1], 'LineWidth',1.2);           % lab e in magenta
-    grid on; xlabel('t [s]'); ylabel('e'); title('Tracking Error','Color','w');
+    grid on; xlabel('t [s]'); ylabel('e [mm]'); title('Tracking Error','Color','w');
     legend({'e_{sim}','e_{lab}'},'Location','eastoutside','TextColor','w','Box','off');
     darken(ax2);
     
@@ -67,13 +75,18 @@ for k = 1:numel(cases)
     ax3 = nexttile; hold(ax3,'on');
     plot(tS, u_sim(:,2), 'Color',[0 1 1], 'LineWidth',1.8);           % sim u in cyan
     plot(tL, U(:,2),      'Color',[1 0 1], 'LineWidth',1.2);          % lab u in magenta
-    grid on; xlabel('t [s]'); ylabel('u'); title('Control Signal','Color','w');
+    grid on; xlabel('t [s]'); ylabel('u [V]'); title('Control Signal','Color','w');
     legend({'u_{sim}','u_{lab}'},'Location','eastoutside','TextColor','w','Box','off');
     darken(ax3);
     
     % Save
-    outPng = fullfile(baseDir, sprintf('MTE360_3_1a_%s_overlay.png',caseName));
+    if k ~= 3
+        outPng = fullfile(baseDir, sprintf('MTE360_3_1a_%s_overlay.png',caseName));
+    else
+        outPng = fullfile(baseDir, sprintf('MTE360_3_1f_%s_overlay.png',caseName));
+    end
     exportgraphics(f,outPng,'Resolution',300,'BackgroundColor','black');
 
 
-end
+end 
+

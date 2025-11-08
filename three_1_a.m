@@ -1,9 +1,9 @@
 clc; clear; close all;
 % --- CONFIG ----
-model_PD = 'PD_controller';  % <-- replace with your model name (the file that contains Figure 2)
-model_distrubance = 'PD_w_disturbance';
 baseDir = fileparts(mfilename('fullpath'));
-cases  = {'2-1a','2-1b','2-1b'};     % will run all and make three figures
+cases   = {'2-1a','2-1b','2-1b'};     % will run all and make three figures
+part    = {'3-1a','3-1a','3-1f'};
+models  = {'PD_controller', 'PD_controller', 'PD_w_disturbance'};
 % ----------------
 
 for k = 1:numel(cases)
@@ -26,15 +26,8 @@ for k = 1:numel(cases)
 
     % 3) Run Simulink for the same time span as the data
     stopTime = num2str(Xr(end,1));
-    if k ~= 3
-        figure_title = ['MTE360 3.1a – ' caseName];
-        load_system(model_PD);
-        simOut   = sim(model_PD, 'StopTime', stopTime, 'ReturnWorkspaceOutputs', 'on');
-    else
-        figure_title = ['MTE360 3.1f – ' caseName];
-        load_system(model_distrubance);
-        simOut   = sim(model_distrubance, 'StopTime', stopTime, 'ReturnWorkspaceOutputs', 'on');
-    end
+    load_system(models{k});
+    simOut   = sim(models{k}, 'StopTime', stopTime, 'ReturnWorkspaceOutputs', 'on');
 
     % 4) Extract logged signals (N×2: [t  value])
     x_sim  = simOut.x_sim;
@@ -46,10 +39,12 @@ for k = 1:numel(cases)
     tL = X(:,1);       % lab time
     
     % 5) Dark figure and three stacked axes
+    figure_title = strrep(['MTE360 3.1a – ' caseName], '3.1a', part{k});
     f  = figure('Name',figure_title , 'Color','k', ...
                 'Position',[100 100 1100 800]);
     tl = tiledlayout(3,1,'TileSpacing','compact','Padding','compact');
-    title(tl,'MTE360 – Section 3.1a Overlay','Color','w','FontWeight','normal');
+    plot_title = strrep('MTE360 – Section 3.1a Overlay', '3.1a', part{k});
+    title(tl,plot_title,'Color','w','FontWeight','normal');
     
     darken = @(ax) set(ax, 'Color','k','XColor','w','YColor','w', ...
                             'GridColor',[0.35 0.35 0.35], 'MinorGridColor',[0.25 0.25 0.25]);
@@ -80,11 +75,9 @@ for k = 1:numel(cases)
     darken(ax3);
     
     % Save
-    if k ~= 3
-        outPng = fullfile(baseDir, sprintf('MTE360_3_1a_%s_overlay.png',caseName));
-    else
-        outPng = fullfile(baseDir, sprintf('MTE360_3_1f_%s_overlay.png',caseName));
-    end
+    file_name = strrep('MTE360_3_1a_%s_overlay.png', '1a', part{k}(3:4));
+    outPng = fullfile(baseDir, sprintf(file_name,caseName));
+
     exportgraphics(f,outPng,'Resolution',300,'BackgroundColor','black');
 
 
